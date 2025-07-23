@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/spf13/cobra"
 )
 
@@ -18,5 +19,22 @@ func init() {
 }
 
 func sayHello(cmd *cobra.Command, args []string) {
+	name, _ := cmd.Flags().GetString("name")
+	greeting := "Hello"
+	language, _ := cmd.Flags().GetString("language")
+	switch language {
+	case "en":
+		greeting = "Hello"
+	case "es":
+		greeting = "Hola"
+	case "fr":
+		greeting = "Bonjour"
+	case "de":
+		greeting = "Hallo"
+	}
+	fmt.Printf("%s %s!\n", greeting, name)
+}
 
+func main() {
+	helloCommand.Execute()
 }

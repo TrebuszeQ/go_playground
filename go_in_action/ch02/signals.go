@@ -32,7 +32,7 @@ func main() {
 
 	func newHandler() *handler {
 		return &handler{}
-	}
+	} 
 
 	func (h *handler) ServeHTTP(res http.ResponseWriter, req *http.Request) {
 		query := query.URL.Query()

@@ -9,10 +9,10 @@ func FuzzSummedRuneCodes(f *testing.F) {
 	for t := range tests {
 		f.Add(tests[t])
 	}
-	f.Fuzz(func(t *testing.T, seed string)) {
+	f.Fuzz(func(t *testing.T, seed string) {
 		got := summedRuneCodes(seed)
 		if got < 0 {
 			t.Errorf("how did this happen? somehow we got %d from string %s", got, seed)
 		}
-	}
-}
+	})
+}	

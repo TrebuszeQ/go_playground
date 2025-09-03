@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"math/rand"
 	"net/http"
 
@@ -10,10 +11,10 @@ import (
 )
 
 var chars = []rune("0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUWXYZ")
-var clients map[string]*websocket.conn
+var clients map[string]*websocket.Conn
 
 func init() {
-	clients = make(map[string]*websocket.conn)
+	clients = make(map[string]*websocket.Conn)
 }
 
 func generateId() string {
@@ -98,7 +99,7 @@ type servermsg struct {
 	MessageType string   `json:"message_type"`
 	Message     string   `json:"message,omitempty"`
 	Id          string   `json:"id,omitempty"`
-	SenderID    string   `json:"sender_id,omitempty"`
+	SenderId    string   `json:"sender_id,omitempty"`
 	ChatMembers []string `json:"chat_members"`
 }
 
@@ -121,4 +122,64 @@ func sendToClients(msg servermsg) error {
 		}
 	}
 	return nil
+}
+
+func disConnectClient(id string) error {
+	delete(clients, id)
+	if err := sendToClients(servermsg{
+		MessageType: "joinleave",
+		Message:     "",
+		Id:          id,
+		SenderId:    "",
+		ChatMembers: compileChatMembers(),
+	}); err != nil {
+		return err
+	}
+	return nil
+}
+
+func ws(ws *websocket.Conn) {
+	id := generateId()
+	clients[id] = ws
+
+	join := servermsg{
+		MessageType: "joinleave",
+		Message:     "",
+		Id:          id,
+		SenderId:    "",
+		ChatMembers: compileChatMembers(),
+	}
+
+	sendToClients(join)
+
+	for {
+		var incoming string
+		if err := websocket.Message.Receive(ws,
+			&incoming); err != nil {
+			if err := disConnectClient(id); err != nil {
+				log.Println(err)
+			}
+			break
+		}
+		if err := sendToClients(servermsg{
+			MessageType: "message",
+			Message:     incoming,
+			Id:          "",
+			SenderId:    id,
+			ChatMembers: compileChatMembers(),
+		}); err != nil {
+			if err := disConnectClient(id); err != nil {
+				log.Println(err)
+			}
+			break
+		}
+	}
+}
+
+func main() {
+	http.HandleFunc("/chat", chatHandler)
+	http.Handle("/ws", websocket.Handler(ws))
+	if err := http.ListenAndServe(":8081", nil); err != nil {
+		panic(err)
+	}
 }
